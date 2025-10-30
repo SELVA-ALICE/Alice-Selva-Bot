@@ -1,56 +1,17 @@
-//esse arquivo precisa rodar só uma vez para adicionar os commandos ao servidor
-
 require('dotenv').config();
-const { REST, Routes, ApplicationCommandOptionType } = require('discord.js');
+const { REST, Routes } = require('discord.js');
+const CommandHandler = require('./utils/commandHandler');
 
-const commands = [
-  {
-    name: 'eleicao',
-    description: 'Inicia uma eleição para um cargo específico',
-    options: [
-      {
-        name: 'cargo',
-        description: 'O cargo para o qual a eleição será realizada',
-        type: ApplicationCommandOptionType.Role,
-        required: true,
-      },
-      {
-        name: 'duracao',
-        description: 'Duração da eleição em minutos',
-        type: ApplicationCommandOptionType.Integer,
-        required: true,
-        min_value: 1,
-        max_value: 1440, //24hrs
-      },
-      {
-        name: 'tipo',
-        description: 'Tipo de eleição',
-        type: ApplicationCommandOptionType.String,
-        required: true,
-        choices: [
-          {
-            name: 'Manter todos com o cargo',
-            value: 'manter',
-          },
-          {
-            name: 'Substituir alguém com o cargo',
-            value: 'substituir',
-          },
-        ],
-      },
-    ],     //Fim dos comandos de eleição, adicione mais comandos após essa linha para registrar mais
+const commandHandler = new CommandHandler();
+commandHandler.loadCommands();
 
-
-
-
-  },
-];
+const commands = commandHandler.getCommandsData();
 
 const rest = new REST({ version: '10' }).setToken(process.env.BOT_TOKEN);
 
 (async () => {
   try {
-    console.log('🔄 Registrando comandos...');
+    console.log(`🔄 Registrando ${commands.length} comando(s)...`);
 
     await rest.put(
       Routes.applicationGuildCommands(
@@ -61,6 +22,7 @@ const rest = new REST({ version: '10' }).setToken(process.env.BOT_TOKEN);
     );
 
     console.log('✅ Comandos registrados com sucesso!');
+    console.log(`📋 Comandos: ${commands.map(c => c.name).join(', ')}`);
   } catch (error) {
     console.log(`❌ Ocorreu um erro: ${error}`);
   }
