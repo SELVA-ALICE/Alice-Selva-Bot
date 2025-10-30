@@ -1,6 +1,22 @@
 {
+  "name": "discord-election-bot",
+  "version": "1.0.0",
+  "description": "Discord bot para realizar eleições de cargos",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "register": "node register-commands.js"
+  },
+  "keywords": [
+    "discord",
+    "bot",
+    "election"
+  ],
+  "author": "",
+  "license": "MIT",
   "dependencies": {
     "discord.js": "^14.24.1",
-    "dotenv": "^17.2.3"
+    "dotenv": "^16.6.1",
+    "express": "^4.18.2"
   }
 }
