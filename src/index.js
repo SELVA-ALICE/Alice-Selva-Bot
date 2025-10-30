@@ -35,7 +35,7 @@ app.get('/health', (req, res) => {
 });
 
 app.listen(port, '0.0.0.0', () => {
-  console.log(`🌐 Servidor HTTP rodando na porta ${port}`); //inicia o servidor que o render solicita
+  console.log(`🌐 Servidor HTTP rodando na porta ${port}`);
 });
 
 client.on('clientReady', () => {
@@ -55,11 +55,20 @@ client.on('interactionCreate', async (interaction) => {
 
 async function handleCommand(interaction) {
   if (interaction.commandName === 'eleicao') {
+    const electionStarterRoleId = process.env.ELECTION_STARTER_ROLE_ID;
+    
+    if (electionStarterRoleId && !interaction.member.roles.cache.has(electionStarterRoleId)) {
+      return interaction.reply({
+        content: `❌ Você não tem permissão para iniciar uma eleição! É necessário ter o cargo <@&${electionStarterRoleId}> para iniciar eleições.`,
+        flags: [MessageFlags.Ephemeral],
+      });
+    }
+
     const role = interaction.options.getRole('cargo');
     const duration = interaction.options.getInteger('duracao');
     const electionType = interaction.options.getString('tipo');
     
-    if (activeElections.has(interaction.guildId)) { //VERIFICA SE TEM ELEIÇÃO ATIVA
+    if (activeElections.has(interaction.guildId)) {
       return interaction.reply({
         content: '❌ Já existe uma eleição ativa neste servidor!',
         flags: [MessageFlags.Ephemeral],
@@ -79,7 +88,7 @@ async function handleCommand(interaction) {
         member.roles.cache.has(role.id) && !member.user.bot
       );
 
-      if (membersWithRole.size === 0) { //ve se tem alguem com a role
+      if (membersWithRole.size === 0) {
         return interaction.editReply({
           content: `❌ Ninguém possui o cargo **${role.name}** atualmente. Use o tipo "Manter todos" para esta eleição.`,
         });
@@ -145,6 +154,12 @@ async function startElection(interaction, role, duration, electionType, replaced
     description += `\n\n✅ **Tipo:** Manter todos - O vencedor receberá o cargo.`;
   }
 
+  const candidateRoleId = process.env.CANDIDATE_ROLE_ID;
+  if (candidateRoleId) {
+    description += `\n\n👤 **Cargo necessário para candidatar-se:** <@&${candidateRoleId}>`;
+  }
+  description += `\n🗳️ **Votação:** Aberta para todos`;
+
   const embed = new EmbedBuilder()
     .setColor('#FFD700')
     .setTitle(`🗳️ Eleição para ${role.name}`)
@@ -172,13 +187,11 @@ async function startElection(interaction, role, duration, electionType, replaced
         .setStyle(ButtonStyle.Danger)
     );
 
-  const response = await interaction.reply({
+  const message = await interaction.reply({
     embeds: [embed],
     components: [row],
-    withResponse: true,
+    fetchReply: true,
   });
-
-  const message = await response.fetch();
 
   electionData.messageId = message.id;
 
@@ -231,6 +244,15 @@ async function handleButton(interaction) {
   }
 
   if (interaction.customId === 'apply_candidate') {
+    const candidateRoleId = process.env.CANDIDATE_ROLE_ID;
+    
+    if (candidateRoleId && !interaction.member.roles.cache.has(candidateRoleId)) {
+      return interaction.reply({
+        content: `❌ Você não tem permissão para se candidatar! É necessário ter o cargo <@&${candidateRoleId}> para se candidatar.`,
+        flags: [MessageFlags.Ephemeral],
+      });
+    }
+
     const userId = interaction.user.id;
     
     if (election.candidates.find(c => c.id === userId)) {
@@ -344,6 +366,12 @@ async function updateElectionMessage(interaction) {
   } else {
     description += `\n\n✅ **Tipo:** Manter todos - O vencedor receberá o cargo.`;
   }
+
+  const candidateRoleId = process.env.CANDIDATE_ROLE_ID;
+  if (candidateRoleId) {
+    description += `\n\n👤 **Cargo necessário para candidatar-se:** <@&${candidateRoleId}>`;
+  }
+  description += `\n🗳️ **Votação:** Aberta para todos`;
 
   const embed = new EmbedBuilder()
     .setColor('#FFD700')

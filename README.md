@@ -11,3 +11,7 @@ CLIENT_ID = application id do bot
 TEST_GUILD_ID = Id do servidor de teste
 
 DEF_GUILD_ID = Id do servidor oficial da selva
+
+ELECTION_STARTER_ROLE_ID = Cargo de quem está autorizado a criar eleições
+
+CANDIDATE_ROLE_ID = Cargo de quem está autorizado a participar de eleições
