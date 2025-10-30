@@ -1,16 +1,48 @@
-require('dotenv').config();
-const { REST, Routes } = require('discord.js');
+//esse arquivo precisa rodar só uma vez para adicionar os commandos ao servidor
 
-// Registrem seus commandos dentro do array para que ele possa ser reconhecido
+require('dotenv').config();
+const { REST, Routes, ApplicationCommandOptionType } = require('discord.js');
 
 const commands = [
   {
     name: 'eleicao',
-    description: 'Commando Teste!',
-  },
-  {
-    name: 'ping',
-    description: 'CommandoTeste2',
+    description: 'Inicia uma eleição para um cargo específico',
+    options: [
+      {
+        name: 'cargo',
+        description: 'O cargo para o qual a eleição será realizada',
+        type: ApplicationCommandOptionType.Role,
+        required: true,
+      },
+      {
+        name: 'duracao',
+        description: 'Duração da eleição em minutos',
+        type: ApplicationCommandOptionType.Integer,
+        required: true,
+        min_value: 1,
+        max_value: 1440, //24hrs
+      },
+      {
+        name: 'tipo',
+        description: 'Tipo de eleição',
+        type: ApplicationCommandOptionType.String,
+        required: true,
+        choices: [
+          {
+            name: 'Manter todos com o cargo',
+            value: 'manter',
+          },
+          {
+            name: 'Substituir alguém com o cargo',
+            value: 'substituir',
+          },
+        ],
+      },
+    ],     //Fim dos comandos de eleição, adicione mais comandos após essa linha para registrar mais
+
+
+
+
   },
 ];
 
@@ -18,18 +50,18 @@ const rest = new REST({ version: '10' }).setToken(process.env.BOT_TOKEN);
 
 (async () => {
   try {
-    console.log('Registrando Comandos');
+    console.log('🔄 Registrando comandos...');
 
     await rest.put(
       Routes.applicationGuildCommands(
-        process.env.CLIENT_ID, //Client I
-        process.env.TEST_GUILD_ID //Utilizar TEST_GUID_ID para servidor de TESTE e DEF_GUILD_ID para Servidor oficial da selva
+        process.env.CLIENT_ID,
+        process.env.TEST_GUILD_ID
       ),
       { body: commands }
     );
 
-    console.log('Commando Registrado com sucesso');
+    console.log('✅ Comandos registrados com sucesso!');
   } catch (error) {
-    console.log(`Ocorreu um Erro: ${error}`);
+    console.log(`❌ Ocorreu um erro: ${error}`);
   }
 })();
