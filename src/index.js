@@ -1,19 +1,9 @@
-const express = require('express')
-const app = express()
-const port = process.env.PORT || 4000
-
-app.get('/', (req, res) => {
-  res.send('Hello World!')
-})
-
-app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`)
-})
-// essa parte de cima foi criada só pq o render solicita que 
-
-
 require('dotenv').config();
+const express = require('express');
 const { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageFlags } = require('discord.js');
+
+const app = express();
+const port = process.env.PORT || 3000;
 
 const client = new Client({
   intents: [
@@ -26,7 +16,30 @@ const client = new Client({
 
 const activeElections = new Map();
 
+let botReady = false;
+
+app.get('/', (req, res) => {
+  res.json({ 
+    status: 'online',
+    bot: botReady ? 'connected' : 'connecting',
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'healthy',
+    bot: botReady ? 'ready' : 'not ready',
+    uptime: process.uptime()
+  });
+});
+
+app.listen(port, '0.0.0.0', () => {
+  console.log(`🌐 Servidor HTTP rodando na porta ${port}`); //inicia o servidor que o render solicita
+});
+
 client.on('clientReady', () => {
+  botReady = true;
   console.log(`✅ Bot conectado como ${client.user.tag}`);
 });
 
@@ -46,7 +59,7 @@ async function handleCommand(interaction) {
     const duration = interaction.options.getInteger('duracao');
     const electionType = interaction.options.getString('tipo');
     
-    if (activeElections.has(interaction.guildId)) {
+    if (activeElections.has(interaction.guildId)) { //VERIFICA SE TEM ELEIÇÃO ATIVA
       return interaction.reply({
         content: '❌ Já existe uma eleição ativa neste servidor!',
         flags: [MessageFlags.Ephemeral],
@@ -66,7 +79,7 @@ async function handleCommand(interaction) {
         member.roles.cache.has(role.id) && !member.user.bot
       );
 
-      if (membersWithRole.size === 0) {
+      if (membersWithRole.size === 0) { //ve se tem alguem com a role
         return interaction.editReply({
           content: `❌ Ninguém possui o cargo **${role.name}** atualmente. Use o tipo "Manter todos" para esta eleição.`,
         });
@@ -210,17 +223,17 @@ async function handleSelectMenu(interaction) {
 async function handleButton(interaction) {
   const election = activeElections.get(interaction.guildId);
 
-  if (!election) { //verifica se há eleição
+  if (!election) {
     return interaction.reply({
       content: '❌ Não há eleição ativa neste servidor.',
       flags: [MessageFlags.Ephemeral],
     });
   }
 
-  if (interaction.customId === 'apply_candidate') { //interação de se tornar candidato
+  if (interaction.customId === 'apply_candidate') {
     const userId = interaction.user.id;
     
-    if (election.candidates.find(c => c.id === userId)) { //verifica se já é candidato
+    if (election.candidates.find(c => c.id === userId)) {
       return interaction.reply({
         content: '❌ Você já está registrado como candidato!',
         flags: [MessageFlags.Ephemeral],
@@ -326,7 +339,7 @@ async function updateElectionMessage(interaction) {
   const timeRemaining = Math.ceil((election.endTime - Date.now()) / 60000);
   let description = `Uma eleição foi iniciada para o cargo de **${election.role.name}**!\n\nDuração restante: **${timeRemaining} minutos**`;
   
-  if (election.electionType === 'substituir' && election.replacedMemberId) { //veriica se a eleição é de substituir e se alguém foi selecionado
+  if (election.electionType === 'substituir' && election.replacedMemberId) {
     description += `\n\n⚠️ **Tipo:** Substituição - <@${election.replacedMemberId}> perderá o cargo se houver um vencedor.`;
   } else {
     description += `\n\n✅ **Tipo:** Manter todos - O vencedor receberá o cargo.`;
@@ -398,4 +411,16 @@ async function endElection(guildId, guild) {
   activeElections.delete(guildId);
 }
 
-client.login(process.env.BOT_TOKEN);
+client.on('error', (error) => {
+  console.error('❌ Erro no cliente Discord:', error);
+});
+
+client.on('warn', (warning) => {
+  console.warn('⚠️ Aviso do Discord:', warning);
+});
+
+console.log('🚀 Iniciando bot...');
+client.login(process.env.BOT_TOKEN).catch((error) => {
+  console.error('❌ Erro ao fazer login no Discord:', error);
+  process.exit(1);
+});
