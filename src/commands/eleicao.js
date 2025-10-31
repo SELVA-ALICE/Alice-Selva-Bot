@@ -160,6 +160,34 @@ module.exports = {
       });
     }
 
+    if (interaction.customId === 'withdraw_candidacy') {
+      const userId = interaction.user.id;
+      const candidateIndex = election.candidates.findIndex(c => c.id === userId);
+      
+      if (candidateIndex === -1) {
+        return interaction.reply({
+          content: '❌ Você não está registrado como candidato!',
+          flags: [MessageFlags.Ephemeral],
+        });
+      }
+
+      const candidateName = election.candidates[candidateIndex].name;
+      election.candidates.splice(candidateIndex, 1);
+
+      election.votes.forEach((votedCandidateId, voterId) => {
+        if (votedCandidateId === userId) {
+          election.votes.delete(voterId);
+        }
+      });
+
+      await updateElectionMessage(interaction);
+
+      return interaction.reply({
+        content: `✅ Sua candidatura foi removida com sucesso! Você não é mais candidato.`,
+        flags: [MessageFlags.Ephemeral],
+      });
+    }
+
     if (interaction.customId === 'start_voting') {
       if (election.candidates.length === 0) {
         return interaction.reply({
@@ -224,6 +252,15 @@ module.exports = {
     }
 
     if (interaction.customId === 'end_election') {
+      const electionStarterRoleId = process.env.ELECTION_STARTER_ROLE_ID;
+      
+      if (electionStarterRoleId && !interaction.member.roles.cache.has(electionStarterRoleId)) {
+        return interaction.reply({
+          content: `❌ Você não tem permissão para encerrar a eleição! Apenas usuários com o cargo <@&${electionStarterRoleId}> podem encerrar eleições.`,
+          flags: [MessageFlags.Ephemeral],
+        });
+      }
+
       await endElection(interaction.guildId, interaction.guild);
       
       return interaction.reply({
@@ -310,6 +347,10 @@ async function startElection(interaction, role, duration, electionType, replaced
         .setCustomId('apply_candidate')
         .setLabel('📝 Candidatar-se')
         .setStyle(ButtonStyle.Primary),
+      new ButtonBuilder()
+        .setCustomId('withdraw_candidacy')
+        .setLabel('🚫 Retirar Candidatura')
+        .setStyle(ButtonStyle.Secondary),
       new ButtonBuilder()
         .setCustomId('start_voting')
         .setLabel('🗳️ Iniciar Votação')
