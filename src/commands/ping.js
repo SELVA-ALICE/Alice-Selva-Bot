@@ -5,15 +5,15 @@ module.exports = {
   },
 
   async execute(interaction) {
-    await interaction.deferReply();
+    const startTime = Date.now();
     
-    const initialTimestamp = interaction.createdTimestamp;
-    const apiLatency = Math.round(interaction.client.ws.ping);
+    await interaction.reply({ content: '🏓 Calculando...' });
+    
+    const roundtripLatency = Date.now() - startTime;
     
     await interaction.editReply(
       `🏓 Pong!\n` +
-      `⏱️ Latência: ${Date.now() - initialTimestamp}ms\n` +
-      `💓 API: ${apiLatency}ms`
+      `⏱️ Latência: ${roundtripLatency}ms\n`
     );
   },
 };
